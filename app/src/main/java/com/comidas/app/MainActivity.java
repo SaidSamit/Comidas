@@ -1,18 +1,18 @@
 package com.comidas.app;
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
-import androidx.appcompat.app.AppCompatActivity;
+
 import java.util.ArrayList;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends Activity {
     ListView listView;
     ArrayList<Food> foodList;
     ArrayAdapter<Food> adapter;
@@ -22,30 +22,31 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        listView = findViewById(R.id.listView);
+
+        listView = (ListView) findViewById(R.id.listView);
         dbHelper = new DBHelper(this);
-        loadFoods();
+        cargarComidas();
 
         listView.setOnItemClickListener((parent, view, position, id) -> {
-            Food selected = foodList.get(position);
+            Food comida = foodList.get(position);
             Intent intent = new Intent(MainActivity.this, AddFoodActivity.class);
-            intent.putExtra("id", selected.getId());
-            intent.putExtra("name", selected.getName());
-            intent.putExtra("description", selected.getDescription());
+            intent.putExtra("id", comida.getId());
+            intent.putExtra("name", comida.getName());
+            intent.putExtra("description", comida.getDescription());
             startActivity(intent);
         });
 
         listView.setOnItemLongClickListener((parent, view, position, id) -> {
-            Food selected = foodList.get(position);
-            new AlertDialog.Builder(this)
+            Food comida = foodList.get(position);
+            new AlertDialog.Builder(MainActivity.this)
                     .setTitle("Eliminar comida")
                     .setMessage("¿Deseas eliminar esta comida?")
                     .setPositiveButton("Sí", (dialog, which) -> {
                         SQLiteDatabase db = dbHelper.getWritableDatabase();
                         db.delete(FoodContract.FoodEntry.TABLE_NAME,
                                 FoodContract.FoodEntry._ID + "=?",
-                                new String[]{String.valueOf(selected.getId())});
-                        loadFoods();
+                                new String[]{String.valueOf(comida.getId())});
+                        cargarComidas();
                     })
                     .setNegativeButton("No", null)
                     .show();
@@ -53,7 +54,7 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void loadFoods() {
+    private void cargarComidas() {
         foodList = new ArrayList<>();
         SQLiteDatabase db = dbHelper.getReadableDatabase();
         Cursor cursor = db.query(FoodContract.FoodEntry.TABLE_NAME,
@@ -61,9 +62,9 @@ public class MainActivity extends AppCompatActivity {
 
         while (cursor.moveToNext()) {
             int id = cursor.getInt(cursor.getColumnIndexOrThrow(FoodContract.FoodEntry._ID));
-            String name = cursor.getString(cursor.getColumnIndexOrThrow(FoodContract.FoodEntry.COLUMN_NAME));
-            String desc = cursor.getString(cursor.getColumnIndexOrThrow(FoodContract.FoodEntry.COLUMN_DESCRIPTION));
-            foodList.add(new Food(id, name, desc));
+            String nombre = cursor.getString(cursor.getColumnIndexOrThrow(FoodContract.FoodEntry.COLUMN_NAME));
+            String descripcion = cursor.getString(cursor.getColumnIndexOrThrow(FoodContract.FoodEntry.COLUMN_DESCRIPTION));
+            foodList.add(new Food(id, nombre, descripcion));
         }
         cursor.close();
 
@@ -74,7 +75,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        loadFoods();
+        cargarComidas();
     }
 
     public void onAddFoodClick(View view) {
